@@ -41,8 +41,10 @@ export class RunComponent extends BaseComponent implements OnInit, OnDestroy {
 
         this._monkeyPatchConsole(window);
 
+        // In case of "Run" view, never include Office.initialize,
+        //     since parent is already initialized and child doesn't need to.
         var createHtmlOptions: ICreateHtmlOptions = {
-            includeOfficeInitialize: Utilities.context != ContextType.Web,
+            includeOfficeInitialize: false,
             inlineJsAndCssIntoIframe: true
         };
 
@@ -145,6 +147,13 @@ export class RunComponent extends BaseComponent implements OnInit, OnDestroy {
             else if (_.object(arg) || _.isArray(arg)) message += stringifyPlusPlus(arg) + ' ';
         });
         message += '\n';
+
+        var trimmedMessage = message.trim();
+        if (trimmedMessage === "Agave.HostCall.IssueCall" ||
+            trimmedMessage === "Agave.HostCall.ReceiveResponse"
+        ) {
+            return;
+        }
 
         var span = document.createElement("span");
         span.classList.add("console");
