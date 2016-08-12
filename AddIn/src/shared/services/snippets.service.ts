@@ -29,7 +29,9 @@ export interface ISnippet {
      * Extras can be of the following form:
      * 
      * // A comment     	                            ==> Ignore
-     * https://appsomething.cdn.blah/something.js       ==> Take as is
+     * https://appsomething.cdn.blah/something.js       ==> Convert to //, then take the rest as is
+     * http://appsomething.cdn.blah/something.js        ==> Convert to //, then take the rest as is
+     * //appsomething.cdn.blah/something.js             ==> Take as is
      * jquery                                           ==> NPM JS
      * office-ui-fabric/dist/js/jquery.fabric.min.js    ==> NPM JS
      * office-ui-fabric/dist/css/fabric.min.css         ==> NPM CSS
@@ -160,12 +162,12 @@ export class Snippet implements ISnippet {
                     return null;
                 }
 
-                if (entry.startsWith("https://") && entry.endsWith(".js")) {
-                    return entry;
+                if (Snippet._entryIsUrl(entry) && entry.endsWith(".js")) {
+                    return Snippet._normalizeUrl(entry);
                 }
 
                 // otherwise assume it's an NPM package name
-                return "https://npmcdn.com/" + entry;
+                return "//npmcdn.com/" + entry;
             })
             .filter((entry) => entry != null);
     }
@@ -175,13 +177,23 @@ export class Snippet implements ISnippet {
             .map((entry) => entry.trim().toLowerCase())
             .filter((entry) => entry.endsWith(".css"))
             .map((entry) => {
-                if (entry.startsWith("https://")) {
-                    return entry;
+                if (Snippet._entryIsUrl(entry)) {
+                    return Snippet._normalizeUrl(entry);
                 }
 
                 // otherwise assume it's an NPM package name
-                return "https://npmcdn.com/" + entry;
+                return "//npmcdn.com/" + entry;
             })
+    }
+
+    static _entryIsUrl(entry: string): boolean {
+        entry = entry.trim().toLowerCase();
+        return entry.startsWith("http://") || entry.startsWith("https://") || entry.startsWith("//");
+    }
+
+    static _normalizeUrl(url: string): string {
+        // strip out https: or http:
+        return url.substr(url.indexOf("//"));
     }
 
     static _isPureValidJs(scriptText): boolean {
